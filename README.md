@@ -1,10 +1,29 @@
 # TileMantle
 
-*A tool to warm up your tile server cache.* Give it a URL template, region, and
-list of zoom levels and it will request tiles incrementally.
+*A tool to warm up your tile server cache.* Give it a URL template, geometry, and
+list of zoom levels and it will request tiles incrementally to warm it up.
 
 ```sh
 $ npm install tilemantle -g
+```
+
+```
+$ tilemantle -h
+
+Usage: tilemantle <url> [options]
+
+Options:
+  --version          Display version number
+  -h, --help         Display usage information
+  -l, --list         Don't perform any requests, just list all tile URLs
+  -z, --zoom         Zoom levels (comma separated or range)
+  -e, --extent       Extent of region in the form of: nw_lat,nw_lon,se_lat,se_lon
+  -p, --point        Center of region (use in conjunction with -b)
+  -b, --buffer       Buffer point/geometry by an amount. Affix units at end: mi,km
+  -d, --delay        Delay between requests. Affix units at end: ms,s               
+  -m, --method       HTTP method to use to fetch tiles                              
+  --ua               User-Agent for requests                                        
+  -c, --concurrency  Number of tiles to request simultaneously                      
 ```
 
 ### Usage
