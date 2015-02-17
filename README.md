@@ -10,7 +10,7 @@ $ npm install tilemantle -g
 ```
 $ tilemantle -h
 
-Usage: tilemantle <url> [options]
+Usage: tilemantle <url> [<url> ...] [options]
 
 Options:
   --version          Display version number
@@ -20,10 +20,10 @@ Options:
   -e, --extent       Extent of region in the form of: nw_lat,nw_lon,se_lat,se_lon
   -p, --point        Center of region (use in conjunction with -b)
   -b, --buffer       Buffer point/geometry by an amount. Affix units at end: mi,km
-  -d, --delay        Delay between requests. Affix units at end: ms,s               
-  -m, --method       HTTP method to use to fetch tiles                              
-  --ua               User-Agent for requests                                        
-  -c, --concurrency  Number of tiles to request simultaneously                      
+  -d, --delay        Delay between requests. Affix units at end: ms,s
+  -m, --method       HTTP method to use to fetch tiles
+  -H, --header       Set request header                                        
+  -c, --concurrency  Number of tiles to request simultaneously
 ```
 
 ### Usage

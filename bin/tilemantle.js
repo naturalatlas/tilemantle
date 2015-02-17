@@ -15,7 +15,7 @@ var filesize = function(bytes) {
 };
 
 var argv = require('yargs')
-	.usage('Usage: $0 <url> [options]')
+	.usage('Usage: $0 <url> [<url> ...] [options]')
 	.version(pkg.version+'\n', 'version', 'Display version number')
 	.alias('h', 'help').describe('h', 'Display usage information').boolean('h')
 	.alias('l', 'list').describe('l', 'Don\'t perform any requests, just list all tile URLs').boolean('l')
@@ -50,7 +50,7 @@ if (argv.help) {
 }
 
 // parse options
-var urltemplate = argv._[2];
+var urltemplates = argv._.slice(2);
 var validateurlparam = function(template, param) {
 	if (template.indexOf(param) === -1) {
 		displayHelp();
@@ -58,14 +58,17 @@ var validateurlparam = function(template, param) {
 		process.exit(1);
 	}
 };
-if (!/^https?\:/.test(urltemplate)) {
-	displayHelp();
-	console.error('No url template provided');
-	process.exit(1);
-}
-validateurlparam(urltemplate, '{x}');
-validateurlparam(urltemplate, '{y}');
-validateurlparam(urltemplate, '{z}');
+
+urltemplates.forEach(function(template) {
+	if (!/^https?\:/.test(template)) {
+		displayHelp();
+		console.error('No url template provided');
+		process.exit(1);
+	}
+	validateurlparam(template, '{x}');
+	validateurlparam(template, '{y}');
+	validateurlparam(template, '{z}');
+});
 
 // execute
 var count_succeeded = 0;
@@ -142,11 +145,15 @@ async.series([
 			var result = [];
 			return result.concat.apply(result, groups);
 		}
-		function formatURL(xyz) {
-			return urltemplate.replace(/\{x\}/g, xyz[0]).replace(/\{y\}/g, xyz[1]).replace(/\{z\}/g, xyz[2]);
+		function buildURLs(xyz) {
+			urltemplates.forEach(function(template) {
+				urls.push(template.replace(/\{x\}/g, xyz[0]).replace(/\{y\}/g, xyz[1]).replace(/\{z\}/g, xyz[2]));
+			});
 		}
 
-		var urls = buildTileList(geojson, zooms).map(formatURL);
+		var urls = [];
+		buildTileList(geojson, zooms).forEach(buildURLs);
+
 		if (argv.list) {
 			for (var i = 0, n = urls.length; i < n; i++) {
 				console.log(urls[i]);
