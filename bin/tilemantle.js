@@ -7,7 +7,12 @@ var turf = require('turf');
 var numeral = require('numeral');
 var request = require('request');
 var tilecover = require('tile-cover');
+var humanizeDuration = require('humanize-duration');
 var pkg = require('../package.json');
+
+var filesize = function(bytes) {
+	return Number((bytes / 1024).toFixed(2)) + 'kB';
+};
 
 var argv = require('yargs')
 	.usage('Usage: $0 <url> [options]')
@@ -20,9 +25,9 @@ var argv = require('yargs')
 	.alias('b', 'buffer').describe('b', 'Buffer point/geometry by an amount. Affix units at end: mi,km').string('b')
 	.alias('d', 'delay').describe('d', 'Delay between requests. Affix units at end: ms,s').string('d')
 	.alias('m', 'method').describe('m', 'HTTP method to use to fetch tiles').string('m')
-	.describe('ua', 'User-Agent for requests').string('ua')
+	.alias('H', 'header').describe('H', 'Add a request header').string('H')
 	.alias('c', 'concurrency').describe('c', 'Number of tiles to request simultaneously')
-	.default({delay: '100ms', concurrency: 1, method: 'HEAD', ua: 'TileMantle/' + pkg.version})
+	.default({delay: '100ms', concurrency: 1, method: 'HEAD'})
 	.check(function(argv) {
 		if (!/^\d+(\.\d+)?(ms|s)$/.test(argv.delay)) throw new Error('Invalid "delay" argument');
 		if (!/^((\d+\-\d+)|(\d+(,\d+)*))$/.test(argv.zoom)) throw new Error('Invalid "zoom" argument');
@@ -66,6 +71,7 @@ validateurlparam(urltemplate, '{z}');
 var count_succeeded = 0;
 var count_failed = 0;
 var rawgeojson = '';
+var t_start = (new Date()).getTime();
 
 async.series([
 	function readFromPipe(callback) {
@@ -147,18 +153,36 @@ async.series([
 			}
 			callback();
 		} else {
+			// build request headers
+			var headers = {};
+			if (argv.header) {
+				if (!Array.isArray(argv.header)) argv.header = [argv.header];
+				argv.header.forEach(function(header) {
+					var delim = header.indexOf(':');
+					if (delim === -1) return;
+					var key = header.substring(0, delim).trim();
+					var value = header.substring(delim + 1).trim();
+					headers[key] = value;
+				});
+			}
+			if (!headers['User-Agent']) {
+				headers['User-Agent'] = 'TileMantle/' + pkg.version;
+			}
+
 			async.eachLimit(urls, argv.concurrency, function(url, callback) {
 				var start = (new Date()).getTime();
 				request({
 					method: argv.method,
 					url: url,
-					headers: {
-						'User-Agent': argv.ua
-					}
-				}, function(err, res) {
+					headers: headers
+				}, function(err, res, body) {
+					if (err) return callback(err);
 					var time = (new Date()).getTime() - start;
 					var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
-					console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms'));
+					var size_data = filesize(res.body.length);
+					var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
+
+					console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
 					if (res.statusCode !== 200) {
 						count_failed++;
 						callback('Request failed (non-200 status)');
@@ -172,8 +196,9 @@ async.series([
 	}
 ], function(err) {
 	if (count_succeeded || count_failed) {
+		var duration = (new Date()).getTime() - t_start;
 		console.log('');
-		console.log(chalk.grey(numeral(count_succeeded).format('0,0') + ' succeeded, ' + numeral(count_failed).format('0,0') + ' failed'));
+		console.log(chalk.grey(numeral(count_succeeded).format('0,0') + ' succeeded, ' + numeral(count_failed).format('0,0') + ' failed after ' + humanizeDuration(duration)));
 	}
 	if (err) {
 		console.error(chalk.red('Error: ' + (err.message || err)));
