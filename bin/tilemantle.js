@@ -9,6 +9,8 @@ var request = require('request');
 var tilecover = require('tile-cover');
 var humanizeDuration = require('humanize-duration');
 var pkg = require('../package.json');
+var ProgressBar = require('progress');
+var bar;
 
 var filesize = function(bytes) {
 	return Number((bytes / 1024).toFixed(2)) + 'kB';
@@ -176,6 +178,7 @@ async.series([
 				headers['User-Agent'] = 'TileMantle/' + pkg.version;
 			}
 
+			bar = new ProgressBar(chalk.gray('[:bar] :percent (:current/:total) eta: :etas'), {total: urls.length, width: 20});
 			async.eachLimit(urls, argv.concurrency, function(url, callback) {
 				var start = (new Date()).getTime();
 				request({
@@ -184,12 +187,16 @@ async.series([
 					headers: headers
 				}, function(err, res, body) {
 					if (err) return callback(err);
+
 					var time = (new Date()).getTime() - start;
 					var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
 					var size_data = filesize(res.body.length);
 					var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
 
+					process.stdout.cursorTo(0);
 					console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
+					bar.tick();
+
 					if (res.statusCode !== 200) {
 						count_failed++;
 						callback('Request failed (non-200 status)');
