@@ -95,7 +95,7 @@ async.series([
 			geojson = JSON.parse(geojson);
 		} else if (argv.point) {
 			var coords = String(argv.point).split(',').map(parseFloat);
-			geojson = turf.point(coords[1], coords[0]);
+			geojson = turf.point([coords[1], coords[0]]);
 		} else if (argv.extent) {
 			var coords = String(argv.extent).split(',').map(parseFloat);
 			var input = turf.featurecollection([
