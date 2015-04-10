@@ -1,6 +1,6 @@
 {
   "name": "tilemantle",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Utility to warm up your tile server's cache",
   "main": "index.js",
   "scripts": {
