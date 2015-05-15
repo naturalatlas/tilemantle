@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+var fs = require('fs');
 var yargs = require('yargs');
 var async = require('async');
 var chalk = require('chalk');
@@ -23,6 +24,7 @@ var argv = require('yargs')
 	.alias('l', 'list').describe('l', 'Don\'t perform any requests, just list all tile URLs').boolean('l')
 	.alias('z', 'zoom').describe('z', 'Zoom levels (comma separated or range)').string('z')
 	.alias('e', 'extent').describe('e', 'Extent of region in the form of: nw_lat,nw_lon,se_lat,se_lon').string('e')
+	.alias('f', 'file').describe('f', 'GeoJSON file on disk to use as geometry').string('f')
 	.alias('p', 'point').describe('p', 'Center of region (use in conjunction with -b)').string('p')
 	.alias('b', 'buffer').describe('b', 'Buffer point/geometry by an amount. Affix units at end: mi,km').string('b')
 	.alias('d', 'delay').describe('d', 'Delay between requests. Affix units at end: ms,s').string('d')
@@ -41,6 +43,7 @@ function displayHelp() {
 	console.log('Examples:');
 	console.log('  $ tilemantle http://myhost.com/{z}/{x}/{y}.png --point=44.523333,-109.057222 --buffer=12mi --zoom=10-14');
 	console.log('  $ tilemantle http://myhost.com/{z}/{x}/{y}.png --extent=44.523333,-109.057222,41.145556,-104.801944 --zoom=10-14');
+	console.log('  $ tilemantle http://myhost.com/{z}/{x}/{y}.png --zoom=10-14 -f region.geojson');
 	console.log('  $ cat region.geojson | tilemantle http://myhost.com/{z}/{x}/{y}.png --zoom=10-14');
 	console.log('  $ cat region.geojson | tilemantle http://myhost.com/{z}/{x}/{y}.png --buffer=20mi --zoom=10-14');
 	console.log('');
@@ -94,7 +97,9 @@ async.series([
 	},
 	function determineGeometry(callback) {
 		if (rawgeojson) {
-			geojson = JSON.parse(geojson);
+			geojson = JSON.parse(rawgeojson);
+		} else if (argv.file) {
+			geojson = JSON.parse(fs.readFileSync(argv.file, 'utf8'));
 		} else if (argv.point) {
 			var coords = String(argv.point).split(',').map(parseFloat);
 			geojson = turf.point([coords[1], coords[0]]);
