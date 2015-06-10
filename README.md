@@ -22,6 +22,7 @@ Options:
   -b, --buffer       Buffer point/geometry by an amount. Affix units at end: mi,km
   -d, --delay        Delay between requests. Affix units at end: ms,s
   -m, --method       HTTP method to use to fetch tiles
+  -r, --retries      Number of retries
   -H, --header       Set request header                                        
   -c, --concurrency  Number of tiles to request simultaneously
 ```

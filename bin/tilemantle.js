@@ -28,10 +28,11 @@ var argv = require('yargs')
 	.alias('p', 'point').describe('p', 'Center of region (use in conjunction with -b)').string('p')
 	.alias('b', 'buffer').describe('b', 'Buffer point/geometry by an amount. Affix units at end: mi,km').string('b')
 	.alias('d', 'delay').describe('d', 'Delay between requests. Affix units at end: ms,s').string('d')
+	.alias('r', 'retries').describe('r', 'Number of retries')
 	.alias('m', 'method').describe('m', 'HTTP method to use to fetch tiles').string('m')
 	.alias('H', 'header').describe('H', 'Add a request header').string('H')
 	.alias('c', 'concurrency').describe('c', 'Number of tiles to request simultaneously')
-	.default({delay: '100ms', concurrency: 1, method: 'HEAD'})
+	.default({delay: '100ms', concurrency: 1, retries: 5, method: 'HEAD'})
 	.check(function(argv) {
 		if (!/^\d+(\.\d+)?(ms|s)$/.test(argv.delay)) throw new Error('Invalid "delay" argument');
 		if (!/^((\d+\-\d+)|(\d+(,\d+)*))$/.test(argv.zoom)) throw new Error('Invalid "zoom" argument');
@@ -185,31 +186,33 @@ async.series([
 
 			bar = new ProgressBar(chalk.gray('[:bar] :percent (:current/:total) eta: :etas'), {total: urls.length, width: 20});
 			async.eachLimit(urls, argv.concurrency, function(url, callback) {
-				var start = (new Date()).getTime();
-				request({
-					method: argv.method,
-					url: url,
-					headers: headers
-				}, function(err, res, body) {
-					if (err) return callback(err);
+				async.retry(argv.retries, function(callback) {
+					var start = (new Date()).getTime();
+					request({
+						method: argv.method,
+						url: url,
+						headers: headers
+					}, function(err, res, body) {
+						if (err) return callback(err);
 
-					var time = (new Date()).getTime() - start;
-					var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
-					var size_data = filesize(res.body.length);
-					var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
+						var time = (new Date()).getTime() - start;
+						var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
+						var size_data = filesize(res.body.length);
+						var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
 
-					process.stdout.cursorTo(0);
-					console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
-					bar.tick();
+						process.stdout.cursorTo(0);
+						console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
+						bar.tick();
 
-					if (res.statusCode !== 200) {
-						count_failed++;
-						callback('Request failed (non-200 status)');
-					} else {
-						count_succeeded++;
-						callback();
-					}
-				});
+						if (res.statusCode !== 200) {
+							count_failed++;
+							callback('Request failed (non-200 status)');
+						} else {
+							count_succeeded++;
+							callback();
+						}
+					});
+				}, callback);
 			}, callback);
 		}
 	}
