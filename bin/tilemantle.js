@@ -22,6 +22,7 @@ var argv = require('yargs')
 	.version(pkg.version+'\n', 'version', 'Display version number')
 	.alias('h', 'help').describe('h', 'Display usage information').boolean('h')
 	.alias('l', 'list').describe('l', 'Don\'t perform any requests, just list all tile URLs').boolean('l')
+	.alias('f', 'allowfailures').describe('l', 'Skip failures, keep on truckin\'').boolean('f')
 	.alias('z', 'zoom').describe('z', 'Zoom levels (comma separated or range)').string('z')
 	.alias('e', 'extent').describe('e', 'Extent of region in the form of: nw_lat,nw_lon,se_lat,se_lon').string('e')
 	.alias('f', 'file').describe('f', 'GeoJSON file on disk to use as geometry').string('f')
@@ -32,7 +33,7 @@ var argv = require('yargs')
 	.alias('m', 'method').describe('m', 'HTTP method to use to fetch tiles').string('m')
 	.alias('H', 'header').describe('H', 'Add a request header').string('H')
 	.alias('c', 'concurrency').describe('c', 'Number of tiles to request simultaneously')
-	.default({delay: '100ms', concurrency: 1, retries: 5, method: 'HEAD'})
+	.default({delay: '100ms', concurrency: 1, allowfailures: true, retries: 5, method: 'HEAD'})
 	.check(function(argv) {
 		if (!/^\d+(\.\d+)?(ms|s)$/.test(argv.delay)) throw new Error('Invalid "delay" argument');
 		if (!/^((\d+\-\d+)|(\d+(,\d+)*))$/.test(argv.zoom)) throw new Error('Invalid "zoom" argument');
@@ -212,7 +213,10 @@ async.series([
 							callback();
 						}
 					});
-				}, callback);
+				}, function(err) {
+					if (err && argv.allowfailures) err = null;
+					callback(err);
+				});
 			}, callback);
 		}
 	}
