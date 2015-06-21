@@ -1,1 +1,1 @@
-// nothing here, see bin/tilemantle.js
+module.exports = require('./server/lib/TileMantle.js');
