@@ -1,3 +1,7 @@
+body {
+	font-family: Helvetica, arial, sans-serif;
+	font-size: 14px;
+}
 #tilemantle, #tilemantle-app {
 	height: 100%;
 	width: 100%;
@@ -6,4 +10,38 @@
 .leaflet-map {
 	width: 100%;
 	height: 100%;
+}
+
+#tilemantle-header {
+	background: #e3762d;
+	color: #fff;
+	height: 30px;
+	box-sizing: border-box;
+	padding: 4px 10px;
+	position: relative;
+	z-index: 2;
+	box-shadow: 0 1px 2px rgba(165, 56, 0, 0.41);
+	border-bottom: 1px solid #CF6026;
+}
+#tilemantle-header button {
+	margin: -5px 0 0 10px;
+	vertical-align: middle;
+	color: #222;
+}
+#tilemantle-header button:disabled {
+	background: none;
+	border: 0 none;
+	color: #E59865;
+}
+#tilemantle-logo {
+	font-weight: 300;
+	font-size: 18px;
+	text-shadow: 0 1px 0 #9f4509;
+}
+#tilemantle-body {
+	position: absolute;
+	top: 30px;
+	left: 0;
+	right: 0;
+	bottom: 0;
 }

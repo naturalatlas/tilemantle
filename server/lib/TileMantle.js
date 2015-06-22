@@ -109,7 +109,10 @@ TileMantle.prototype.execute = function(payload, callback) {
 
 	// finalize options
 	var defaults = {retries: 0, retry_delay: 1000, method: 'HEAD', headers: {}};
-	var baseopts = _.extend(defaults, this.config.defaults, preset.defaults, payload);
+	var baseopts = _.extend(defaults, this.config.preset_defaults, preset.defaults, payload);
+
+	// emit event
+	this.emit('tile_start', {payload: payload});
 
 	// execute each url in preset in order
 	async.eachSeries(preset.options.requests, function(request, callback) {
@@ -139,7 +142,10 @@ TileMantle.prototype.execute = function(payload, callback) {
 				callback();
 			});
 		});
-	}, callback);
+	}, function(err) {
+		self.emit('tile_end', {payload: payload, err: err});
+		callback(err);
+	});
 };
 
 /**

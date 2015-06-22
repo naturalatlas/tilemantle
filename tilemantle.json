@@ -4,7 +4,8 @@
 		"adapter": "sqlite",
 		"file": "./tilemantle.lite"
 	},
-	"defaults": {
+	"upload_limit": "5mb",
+	"preset_defaults": {
 		"retries": 5,
 		"retry_delay": 1000
 	},

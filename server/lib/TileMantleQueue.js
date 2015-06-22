@@ -10,7 +10,7 @@ function TileMantleQueue(store) {
  * @param {function} callback
  */
 TileMantleQueue.prototype.add = function(preset, payload, callback) {
-
+	this.store.queue.add(preset.name, payload, callback);
 };
 
 /**
@@ -24,7 +24,7 @@ TileMantleQueue.prototype.add = function(preset, payload, callback) {
  * @return {void}
  */
 TileMantleQueue.prototype.take = function(callback) {
-
+	this.store.queue.take(callback);
 };
 
 module.exports = TileMantleQueue;
