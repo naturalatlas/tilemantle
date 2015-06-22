@@ -19,5 +19,8 @@
 			]
 		}
 	},
-	"display_layers": []
+	"display_layers": [
+		{"title": "OpenStreetMap", "url_1x": "http://{s}.tile.osm.org/{z}/{x}/{y}.png", "attribution": "&copy; <a href=\"http://osm.org/copyright\">OpenStreetMap</a> contributors"},
+		{"title": "Natural Atlas", "url_1x": "http://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t.png", "url_2x": "http://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t@2x.png", "minZoom": 6, "maxZoom": 15}
+	]
 }
