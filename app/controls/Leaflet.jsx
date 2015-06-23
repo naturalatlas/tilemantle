@@ -1,11 +1,15 @@
 var _ = require('lodash');
 var React = require('react');
+var tilebelt = require('tilebelt');
 var request = require('superagent');
 var colors = {
 	grid: '#e3762d',
 	user: '#e3762d',
-	queue: '#f7a944'
+	queue: '#f7a944',
+	success: '#aee64e'
 };
+
+var MAX_TILES = 100;
 
 module.exports = React.createClass({
 	getDefaultProps() {
@@ -14,8 +18,13 @@ module.exports = React.createClass({
 			onSelection: function(geom) {}
 		};
 	},
-	getTileStyle() {
-		return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.3};
+	getTileStyle(feature) {
+		if (feature.properties.complete) {
+			var opacity = feature.properties.i / this._completeTiles.length;
+			return {stroke: false, color: colors.success, fillOpacity: opacity};
+		} else {
+			return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.3};
+		}
 	},
 	componentDidMount() {
 		var L = require('leaflet');
@@ -62,6 +71,16 @@ module.exports = React.createClass({
 		this.refreshQueueLayer();
 		this.map.on('moveend', this.refreshQueueLayer);
 		setInterval(this.refreshQueueLayer, 2500);
+
+		this.initSocket();
+	},
+	initSocket() {
+		var self = this;
+		if (!window.io) return console.warn('Socket.io not found');
+		var socket = io(window.location.host);
+		socket.on('tile_end', function(payload) {
+			self.handleTileComplete(payload);
+		});
 	},
 	initLeafletTileGrid() {
 		var L = require('leaflet');
@@ -160,6 +179,28 @@ module.exports = React.createClass({
 			selection.removeLayer(layer);
 		});
 		this.props.onSelection(null);
+	},
+	handleTileComplete(payload) {
+		this._completeTiles = this._completeTiles || [];
+		this._completeTiles.push([payload.x,payload.y,payload.z]);
+		if (this._completeTiles.length > MAX_TILES) {
+			this._completeTiles.shift();
+		}
+
+		var geojson = {
+			type: 'FeatureCollection',
+			features: this._completeTiles.map(function(tile, i) {
+				return {
+					type: 'Feature',
+					properties: {complete: true, i: i},
+					geometry: tilebelt.tileToGeoJSON(tile)
+				};
+			})
+		};
+
+		if (this._completedLayer) this.map.removeLayer(this._completedLayer);
+		var newLayer = L.geoJson(geojson, {style: this.getTileStyle, zIndex: 9998}).addTo(this.map);
+		this._completedLayer = newLayer;
 	},
 	render() {
 		return <div className="leaflet-map"></div>;
