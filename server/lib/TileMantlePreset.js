@@ -6,12 +6,13 @@ var tilecover = require('tile-cover');
 var buffer = require('./utils/buffer.js');
 
 // var deg_per_tile = {};
-// for (var z = 0, zmax = 22; z < zmax; z++) {
+// for (var z = 0, zmax = 25; z <= zmax; z++) {
 // 	var bbox = tilebelt.tileToBBOX([0,0,z]);
 // 	var xdelta = Math.abs(bbox[0]-bbox[2]);
 // 	var ydelta = Math.abs(bbox[1]-bbox[3]);
 // 	deg_per_tile[z] = Math.max(xdelta, ydelta);
 // }
+// console.log(deg_per_tile);
 
 var deg_per_tile = {
 	'0': 360,
@@ -28,14 +29,17 @@ var deg_per_tile = {
 	'11': 0.17578125,
 	'12': 0.087890625,
 	'13': 0.0439453125,
-	'14': 0.02197265625,
 	'15': 0.010986328125,
 	'16': 0.0054931640625,
 	'17': 0.00274658203125,
 	'18': 0.001373291015625,
 	'19': 0.0006866455078125,
 	'20': 0.00034332275390625,
-	'21': 0.000171661376953125
+	'21': 0.000171661376953125,
+	'22': 0.0000858306884765625,
+	'23': 0.00004291534423828125,
+	'24': 0.000021457672119140625,
+	'25': 0.000010728836059570312
 };
 
 

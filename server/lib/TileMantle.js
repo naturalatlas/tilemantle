@@ -1,7 +1,9 @@
 var _ = require('lodash');
 var async = require('async');
+var request = require('request');
 var TileMantleQueue = require('./TileMantleQueue.js');
 var TileMantlePreset = require('./TileMantlePreset.js');
+var TileMantleWorker = require('./TileMantleWorker.js');
 
 function TileMantle(config) {
 	this.config = config;
@@ -27,7 +29,7 @@ TileMantle.prototype.bind = function(io) {
  * @return {void}
  */
 TileMantle.prototype.emit = function(event, data) {
-	if (this._io) return;
+	if (!this._io) return;
 	data = data || {};
 	data.timestamp = Date.now();
 	this._io.emit(event, data);
@@ -115,10 +117,10 @@ TileMantle.prototype.execute = function(payload, callback) {
 	this.emit('tile_start', {payload: payload});
 
 	// execute each url in preset in order
-	async.eachSeries(preset.options.requests, function(request, callback) {
-		var headers = request.headers;
-		var method = request.method || preset.options.method || 'HEAD';
-		var url = request.url
+	async.eachSeries(preset.options.requests, function(req, callback) {
+		var headers = req.headers;
+		var method = req.method || preset.options.method || 'HEAD';
+		var url = req.url
 			.replace(/\{x\}/g, payload.x)
 			.replace(/\{y\}/g, payload.y)
 			.replace(/\{z\}/g, payload.z);
@@ -140,11 +142,11 @@ TileMantle.prototype.execute = function(payload, callback) {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
 					return cb(new Error('Received HTTP ' + res.statusCode + ' status'));
 				}
-				callback();
+				cb();
 			});
-		});
+		}, callback);
 	}, function(err) {
-		self.emit('tile_end', {payload: payload, err: err});
+		self.emit('tile_end', payload);
 		callback(err);
 	});
 };
@@ -168,6 +170,31 @@ TileMantle.prototype.initialize = function(callback) {
 			store.init(callback)
 		}
 	], callback);
+};
+
+/**
+ * Starts processing the queue.
+ *
+ * @return {function}
+ */
+TileMantle.prototype.start = function() {
+	var self = this;
+	var workers = [];
+	var concurrency = this.config.concurrency || 2;
+	for (var i = 0; i < concurrency; i++) {
+		workers.push(new TileMantleWorker(this));
+	}
+
+	this._stop = function() {
+		self._stop = null;
+		workers.forEach(function(worker) {
+			worker.stop();
+		});
+	};
+};
+
+TileMantle.prototype.stop = function() {
+	if (this._stop) this._stop();
 };
 
 module.exports = TileMantle;

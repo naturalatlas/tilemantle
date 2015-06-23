@@ -48,33 +48,23 @@ SQLite.prototype.select = function(z, xrange, yrange, opts, callback) {
 
 SQLite.prototype.take = function(callback) {
 	var self = this;
-	var tx_active = false;
-	var item = null;
+	var item;
 
-	async.series([
-		function lock(callback) {
-			self.db.run('BEGIN EXCLUSIVE', function(err) {
-				tx_active = !err;
-				callback(err);
-			});
-		},
-		function fetchItem(callback) {
-			self.db.get('SELECT rowid AS id, x, y, z, preset, ts FROM queue', function(err, result) {
-				if (!err) item = result;
-				callback(err);
-			});
-		},
-		function deleteItem(callback) {
-			self.db.run('DELETE FROM queue WHERE rowid = ?', [item.id], callback);
-		},
-		function unlock(callback) {
-			self.db.run('COMMIT', callback);
-		}
-	], function(err) {
-		if (err && tx_active) {
-			self.db.run('ROLLBACK');
-		}
-		callback(err, item);
+	this.db.serialize(function() {
+		async.series([
+			function getRow(callback) {
+				self.db.get('SELECT rowid AS id, x, y, z, preset, ts FROM queue', function(err, row) {
+					item = row;
+					callback(err);
+				});
+			},
+			function deleteRow(callback) {
+				if (!item) return callback();
+				self.db.run('DELETE FROM queue WHERE rowid = ?', [item.id], callback);
+			}
+		], function(err) {
+			callback(err, item);
+		});
 	});
 };
 

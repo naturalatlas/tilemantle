@@ -22,8 +22,8 @@ TileMantleQueue.prototype.insert = function(preset, x, y, z, callback) {
  * Returns the next item in the queue that should be processed.
  * Two arguments are passed to the callback:
  *
- *   - payload {object}
- *   - callback {function} (call when done processing)
+ *   - err {object}
+ *   - payload {object|null}
  *
  * @param {function} callback
  * @return {void}

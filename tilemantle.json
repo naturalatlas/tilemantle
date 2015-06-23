@@ -2,8 +2,11 @@
 	"port": 8080,
 	"store": {
 		"adapter": "sqlite",
-		"file": "./tilemantle.sqlite3"
+		"file": ":memory:"
 	},
+	"concurrency": 5,
+	"delay_between_tiles": 50,
+	"idle_delay": 250,
 	"upload_limit": "5mb",
 	"preset_defaults": {
 		"retries": 5,
@@ -15,10 +18,10 @@
 		"basemap": {
 			"title": "Basemap",
 			"requests": [
-				{"url": "https://tiles.naturalatlas.com/topo/{z}/{x}/{y}/t.pbf", "headers": {"X-TileStrata-CacheSkip": "topo/t.pbf"}},
-				{"url": "https://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t.png", "headers": {"X-TileStrata-CacheSkip": "topo/t.png,basemap/t.png"}},
-				{"url": "https://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t@2x.png", "headers": {"X-TileStrata-CacheSkip": "topo/t@2x.png,basemap/t@2x.png"}},
-				{"url": "https://tiles.naturalatlas.com/topo/{z}/{x}/{y}/t.pbf", "headers": {"X-TileStrata-CacheSkip": "topo/t.pbf"}}
+				{"url": "https://tiles.naturalatlas.com/topo/{z}/{x}/{y}/t.pbf"},
+				{"url": "https://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t.png"},
+				{"url": "https://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t@2x.png"},
+				{"url": "https://tiles.naturalatlas.com/topo/{z}/{x}/{y}/t.pbf"}
 			],
 			"buffer": {
 				"15": 1,

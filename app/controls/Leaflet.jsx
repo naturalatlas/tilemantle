@@ -21,7 +21,7 @@ module.exports = React.createClass({
 	getTileStyle(feature) {
 		if (feature.properties.complete) {
 			var opacity = feature.properties.i / this._completeTiles.length;
-			return {stroke: false, color: colors.success, fillOpacity: opacity};
+			return {fillColor: colors.success, fillOpacity: opacity, color: '#50be00', weight: 1, opacity: 1};
 		} else {
 			return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.3};
 		}
@@ -72,6 +72,7 @@ module.exports = React.createClass({
 		this.map.on('moveend', this.refreshQueueLayer);
 		setInterval(this.refreshQueueLayer, 2500);
 
+		this.renderCompletedTiles = _.throttle(this.renderCompletedTiles, 500);
 		this.initSocket();
 	},
 	initSocket() {
@@ -187,6 +188,9 @@ module.exports = React.createClass({
 			this._completeTiles.shift();
 		}
 
+		this.renderCompletedTiles();
+	},
+	renderCompletedTiles() {
 		var geojson = {
 			type: 'FeatureCollection',
 			features: this._completeTiles.map(function(tile, i) {

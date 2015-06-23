@@ -40,5 +40,6 @@ tilemantle.initialize(function(err) {
 			process.exit(1);
 		}
 		console.log('Listening on port ' + port);
+		tilemantle.start();
 	});
 });
