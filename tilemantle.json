@@ -2,12 +2,14 @@
 	"port": 8080,
 	"store": {
 		"adapter": "sqlite",
-		"file": "./tilemantle.lite"
+		"file": "./tilemantle.sqlite3"
 	},
 	"upload_limit": "5mb",
 	"preset_defaults": {
 		"retries": 5,
-		"retry_delay": 1000
+		"retry_delay": 1000,
+		"minZoom": 6,
+		"maxZoom": 15
 	},
 	"presets": {
 		"basemap": {
@@ -17,7 +19,19 @@
 				{"url": "https://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t.png", "headers": {"X-TileStrata-CacheSkip": "topo/t.png,basemap/t.png"}},
 				{"url": "https://tiles.naturalatlas.com/basemap/{z}/{x}/{y}/t@2x.png", "headers": {"X-TileStrata-CacheSkip": "topo/t@2x.png,basemap/t@2x.png"}},
 				{"url": "https://tiles.naturalatlas.com/topo/{z}/{x}/{y}/t.pbf", "headers": {"X-TileStrata-CacheSkip": "topo/t.pbf"}}
-			]
+			],
+			"buffer": {
+				"15": 1,
+				"14": 1,
+				"13": 1,
+				"12": 1,
+				"11": 1,
+				"10": 1,
+				"9": 1,
+				"8": 1,
+				"7": 1,
+				"6": 1
+			}
 		}
 	},
 	"display_layers": [

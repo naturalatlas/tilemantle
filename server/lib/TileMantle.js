@@ -1,4 +1,7 @@
 var _ = require('lodash');
+var async = require('async');
+var TileMantleQueue = require('./TileMantleQueue.js');
+var TileMantlePreset = require('./TileMantlePreset.js');
 
 function TileMantle(config) {
 	this.config = config;
@@ -75,14 +78,10 @@ TileMantle.prototype.queue = function() {
 TileMantle.prototype.preset = function(name) {
 	if (!this._presets.hasOwnProperty(name)) {
 		var presets = this.config.presets || {};
-		var presetConfig = presets[name];
-		if (presetConfig) {
-			this._presets[name] = new TileMantlePreset(name, presetConfig);
-		} else {
-			this._presets[name] = null;
-		}
+		var presetConfig = _.extend({}, this.config.preset_defaults, presets[name]);
+		this._presets[name] = new TileMantlePreset(name, presetConfig);
 	}
-	return this.presets[name];
+	return this._presets[name];
 };
 
 /**
@@ -93,7 +92,7 @@ TileMantle.prototype.preset = function(name) {
  *   - x {int}
  *   - y {int}
  *   - z {int}
- *   - headers {object} (optional)
+ *   - ts {int}
  *
  * @param {object} payload
  * @param {function} callback
@@ -106,34 +105,36 @@ TileMantle.prototype.execute = function(payload, callback) {
 	var preset;
 	try { preset = this.preset(payload.preset); }
 	catch(e) { return callback(e); }
+	if (!preset) return callback(new Error('Preset "' + payload.preset + '" not found'));
 
-	// finalize options
-	var defaults = {retries: 0, retry_delay: 1000, method: 'HEAD', headers: {}};
-	var baseopts = _.extend(defaults, this.config.preset_defaults, preset.defaults, payload);
+	// final options
+	var retries = preset.options.retries || 0;
+	var retry_delay = preset.options.retry_delay || 1000;
 
 	// emit event
 	this.emit('tile_start', {payload: payload});
 
 	// execute each url in preset in order
 	async.eachSeries(preset.options.requests, function(request, callback) {
-		var opts = _.extend({}, baseopts, request);
+		var headers = request.headers;
+		var method = request.method || preset.options.method || 'HEAD';
 		var url = request.url
 			.replace(/\{x\}/g, payload.x)
 			.replace(/\{y\}/g, payload.y)
 			.replace(/\{z\}/g, payload.z);
 
-		async.retry(opts.retries, function(callback) {
+		async.retry(retries, function(callback) {
 			var cb = function(err) {
-				if (err && opts.retries && opts.retry_delay) {
-					return setTimeout(function() { callback(err); }, opts.retry_delay);
+				if (err && retries && retry_delay) {
+					return setTimeout(function() { callback(err); }, retry_delay);
 				}
 				callback(err);
 			};
 
 			request({
 				url: url,
-				method: opts.method,
-				headers: opts.headers
+				method: method,
+				headers: headers
 			}, function(err, res, body) {
 				if (err) return cb(err);
 				if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -156,12 +157,13 @@ TileMantle.prototype.execute = function(payload, callback) {
  * @return {void}
  */
 TileMantle.prototype.initialize = function(callback) {
-	if (!this._init) return callback();
+	var self = this;
+	if (this._init) return callback();
 	this._init = true;
 
 	async.series([
 		function initStore(callback) {
-			var store = this.store();
+			var store = self.store();
 			if (!store.init) return callback();
 			store.init(callback)
 		}

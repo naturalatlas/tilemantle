@@ -23,9 +23,17 @@ body {
 	box-shadow: inset 0 -1px 1px rgba(134, 132, 128, 0.2);
 }
 #tilemantle-header button {
-	margin: -5px 0 0 10px;
+	margin: -5px 5px 0 0;
 	vertical-align: middle;
 	color: #222;
+	height: 19px;
+	font-size: 11px;
+}
+#tilemantle-header select {
+	height: 19px;
+	font-size: 11px;
+	margin: -6px 5px 0 0;
+	vertical-align: middle;
 }
 #tilemantle-header button:disabled {
 	background: none;
@@ -35,6 +43,7 @@ body {
 #tilemantle-logo {
 	font-weight: 300;
 	font-size: 18px;
+	margin-right: 10px;
 }
 #tilemantle-body {
 	position: absolute;

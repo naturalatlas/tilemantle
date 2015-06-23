@@ -1,13 +1,21 @@
 var _ = require('lodash');
 var React = require('react');
+var request = require('superagent');
+var colors = {
+	grid: '#e3762d',
+	user: '#e3762d',
+	queue: '#f7a944'
+};
 
 module.exports = React.createClass({
-
 	getDefaultProps() {
 		return {
 			layers: [],
 			onSelection: function(geom) {}
 		};
+	},
+	getTileStyle() {
+		return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.3};
 	},
 	componentDidMount() {
 		var L = require('leaflet');
@@ -42,27 +50,52 @@ module.exports = React.createClass({
 		// initialize leaflet
 		opts.layers = _.pluck(layers, 'leaflet');
 		var map = this.map = L.map(el, opts).setView([39.57182223734374,-100.283203125], 6);
-		L.control.layers(layerList, {}).addTo(map);
+		L.control.layers(layerList, {}, {collapsed: false}).addTo(map);
+
+		this.userStripes = new L.StripePattern({angle: 45, color: colors.user});
+		this.queueStripes = new L.StripePattern({angle: 45, color: colors.queue});
+		this.userStripes.addTo(map);
+		this.queueStripes.addTo(map);
+		this.initLeafletTileGrid();
 		this.initLeafletDrawing();
+
+		this.refreshQueueLayer();
+		this.map.on('moveend', this.refreshQueueLayer);
+		setInterval(this.refreshQueueLayer, 2500);
+	},
+	initLeafletTileGrid() {
+		var L = require('leaflet');
+		var canvasTiles = L.tileLayer.canvas({zIndex: 9999});
+		canvasTiles.drawTile = function(canvas, tilePoint, zoom) {
+			var ctx = canvas.getContext('2d');
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = ctx.fillStyle = colors.grid;
+			ctx.rect(0.5,0.5,257,257);
+			ctx.stroke();
+			if (ctx.setLineDash) ctx.setLineDash([2,2]);
+			ctx.moveTo(127.5,0);
+			ctx.lineTo(127.5,256);
+			ctx.stroke();
+			ctx.moveTo(0,127.5);
+			ctx.lineTo(256,127.5);
+			ctx.stroke();
+			ctx.fillText('x:'+tilePoint.x + ' y:' + tilePoint.y + ' z:' + zoom, 5, 10);
+		};
+		canvasTiles.addTo(this.map);
 	},
 	initLeafletDrawing() {
 		var self = this;
 		var map = this.map;
 		var drawnItems = this.selection = new L.FeatureGroup();
-		map.addLayer(drawnItems);
-
-		var shapeColor = '#e3762d';
-		var stripes = new L.StripePattern({angle: 45, color: shapeColor});
-		stripes.addTo(map);
 
 		var drawControl = new L.Control.Draw({
 			position: 'topright',
 			draw: {
 				circle: false,
-				rectangle: {shapeOptions: {stroke: false, fillPattern: stripes, fillOpacity: 1, color: shapeColor}},
-				polygon: {shapeOptions: {stroke: false, fillPattern: stripes, fillOpacity: 1, color: shapeColor}},
-				polyline: {shapeOptions: {color: shapeColor}},
-				line: {shapeOptions: {color: shapeColor}}
+				rectangle: {shapeOptions: {stroke: false, fillPattern: this.userStripes, fillOpacity: 1}},
+				polygon: {shapeOptions: {stroke: false, fillPattern: this.userStripes, fillOpacity: 1}},
+				polyline: {shapeOptions: {color: colors.user}},
+				line: {shapeOptions: {color: colors.user}}
 			},
 			edit: {
 				featureGroup: drawnItems,
@@ -70,10 +103,56 @@ module.exports = React.createClass({
 			}
 		});
 		map.addControl(drawControl);
+		map.addLayer(drawnItems);
+
 		map.on('draw:created', function(e) {
 			drawnItems.addLayer(e.layer);
 			self.props.onSelection(drawnItems.toGeoJSON());
 		});
+	},
+	refreshQueueLayer() {
+		var self = this;
+		var map = this.map;
+		var bounds = map.getBounds();
+
+		var newQueueLayer = L.layerGroup();
+		var oldQueueLayer = self._queueLayer;
+		self._queueLayer = newQueueLayer;
+		newQueueLayer.addTo(map);
+
+		// cancel pending requests
+		if (this._refreshXHRs) this._refreshXHRs.forEach(function(xhr) { xhr.abort(); });
+		this._refreshXHR = [];
+
+		var zoomsLoaded = 0;
+		var zoomsExpected = 0;
+
+		function loadZoom(z) {
+			zoomsExpected++;
+			self._refreshXHR.push(request.get('/api/queue').query({
+				z: z,
+				xmin: bounds.getWest(),
+				xmax: bounds.getEast(),
+				ymin: bounds.getNorth(),
+				ymax: bounds.getSouth(),
+				geojson: 1
+			}).end(function(err, res) {
+				zoomsLoaded++;
+				if (zoomsLoaded === zoomsExpected) {
+					if (oldQueueLayer) {
+						map.removeLayer(oldQueueLayer);
+						oldQueueLayer = null;
+					}
+				}
+
+				if (err) return console.error(err);
+				if (!res.ok) return;
+				L.geoJson(res.body, {style: self.getTileStyle}).addTo(newQueueLayer);
+			}));
+		}
+
+		loadZoom(map.getZoom());
+		loadZoom(map.getZoom()+1);
 	},
 	clearSelection() {
 		var selection = this.selection;
