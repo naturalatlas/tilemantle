@@ -12,6 +12,7 @@ module.exports = React.createClass({
 	componentDidMount() {
 		var L = require('leaflet');
 		require('leaflet-draw');
+		require('../vendor/leaflet.pattern.js');
 		L.Icon.Default.imagePath = '/images';
 
 		var el = React.findDOMNode(this);
@@ -50,13 +51,16 @@ module.exports = React.createClass({
 		var drawnItems = this.selection = new L.FeatureGroup();
 		map.addLayer(drawnItems);
 
-		var shapeColor = '#eba638';
+		var shapeColor = '#e3762d';
+		var stripes = new L.StripePattern({angle: 45, color: shapeColor});
+		stripes.addTo(map);
+
 		var drawControl = new L.Control.Draw({
 			position: 'topright',
 			draw: {
 				circle: false,
-				rectangle: {shapeOptions: {color: shapeColor}},
-				polygon: {shapeOptions: {color: shapeColor}},
+				rectangle: {shapeOptions: {stroke: false, fillPattern: stripes, fillOpacity: 1, color: shapeColor}},
+				polygon: {shapeOptions: {stroke: false, fillPattern: stripes, fillOpacity: 1, color: shapeColor}},
 				polyline: {shapeOptions: {color: shapeColor}},
 				line: {shapeOptions: {color: shapeColor}}
 			},

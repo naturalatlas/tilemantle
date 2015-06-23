@@ -13,15 +13,14 @@ body {
 }
 
 #tilemantle-header {
-	background: #e3762d;
-	color: #fff;
+	background: #F5F5F3;
+	color: #666565;
 	height: 30px;
 	box-sizing: border-box;
 	padding: 4px 10px;
 	position: relative;
 	z-index: 2;
-	box-shadow: 0 1px 2px rgba(165, 56, 0, 0.41);
-	border-bottom: 1px solid #CF6026;
+	box-shadow: inset 0 -1px 1px rgba(134, 132, 128, 0.2);
 }
 #tilemantle-header button {
 	margin: -5px 0 0 10px;
@@ -31,12 +30,11 @@ body {
 #tilemantle-header button:disabled {
 	background: none;
 	border: 0 none;
-	color: #E59865;
+	opacity: 0.1;
 }
 #tilemantle-logo {
 	font-weight: 300;
 	font-size: 18px;
-	text-shadow: 0 1px 0 #9f4509;
 }
 #tilemantle-body {
 	position: absolute;
