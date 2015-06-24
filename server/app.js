@@ -29,6 +29,7 @@ tilemantle.initialize(function(err) {
 
 	// routes
 	app.get('/', require('./routes/index.js'));
+	app.post('/api/reset', require('./routes/reset.js'));
 	app.post('/api/invalidate', require('./routes/invalidate.js'));
 	app.get('/api/queue', require('./routes/queue.js'));
 

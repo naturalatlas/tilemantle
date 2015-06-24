@@ -45,6 +45,17 @@ body {
 	font-size: 18px;
 	margin-right: 10px;
 }
+#tilemantle-queue-size {
+	position: absolute;
+	right: 10px;
+	top: 8px;
+	font-size: 12px;
+}
+#tilemantle-queue-size button {
+	margin-left: 10px;
+	vertical-align: middle;
+	margin-bottom: -2px;
+}
 #tilemantle-body {
 	position: absolute;
 	top: 30px;

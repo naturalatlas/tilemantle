@@ -2,6 +2,7 @@ var _ = require('lodash');
 var request = require('superagent');
 var React = require('react');
 var Leaflet = require('./controls/Leaflet.jsx');
+var socket = require('./utils/socket.js');
 
 module.exports = React.createClass({
 	getDefaultProps() {
@@ -11,9 +12,16 @@ module.exports = React.createClass({
 	},
 	getInitialState() {
 		return {
+			queueLength: null,
 			selectedGeometry: null,
 			selectedPreset: null
 		};
+	},
+	componentDidMount() {
+		var self = this;
+		socket().on('queue_length', function(count) {
+			self.setState({queueLength: count});
+		});
 	},
 	handleSelection(geom) {
 		this.setState({selectedGeometry: geom});
@@ -39,6 +47,13 @@ module.exports = React.createClass({
 	handlePreset(e) {
 		this.setState({selectedPreset: e.target.value||null});
 	},
+	handleReset() {
+		if (!confirm('Are you sure you want to clear the queue?')) return;
+		request.post('/api/reset').end(function(err, res) {
+			if (err || !res.ok) alert('Failed to clear queue');
+			alert('Queue cleared!');
+		});
+	},
 	renderPresetSelect() {
 		var self = this;
 		var presets = [{title: '', el: <option key="empty" value="">Select a Preset</option>}];
@@ -55,13 +70,21 @@ module.exports = React.createClass({
 			{_.pluck(presets,'el')}
 		</select>;
 	},
+	renderQueueLength() {
+		if (typeof this.state.queueLength !== 'number') {
+			return;
+		}
+		return <span id="tilemantle-queue-size"><strong>{this.state.queueLength}</strong> Tiles Left<button onClick={this.handleReset}>Reset</button></span>;
+	},
 	render() {
+
 		return <div id="tilemantle-app">
 			<div id="tilemantle-header">
 				<span id="tilemantle-logo">TileMantle</span>
 				{this.renderPresetSelect()}
 				<button onClick={this.handleInvalidate} disabled={!this.state.selectedGeometry||!this.state.selectedPreset}>Queue</button>
 				<button onClick={this.handleClear} disabled={!this.state.selectedGeometry}>Clear</button>
+				{this.renderQueueLength()}
 			</div>
 			<div id="tilemantle-body">
 				<Leaflet ref="leaflet" onSelection={this.handleSelection} layers={this.props.config.display_layers} />

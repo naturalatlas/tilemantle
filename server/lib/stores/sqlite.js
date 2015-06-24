@@ -80,4 +80,15 @@ SQLite.prototype.insert = function(preset, x, y, z, callback) {
 	});
 };
 
+SQLite.prototype.length = function(callback) {
+	this.db.get('SELECT COUNT(*) AS count FROM queue', function(err, row) {
+		if (err) return callback(err);
+		callback(null, row.count);
+	});
+};
+
+SQLite.prototype.reset = function(callback) {
+	this.db.run('DELETE FROM queue', callback);
+};
+
 module.exports = SQLite;

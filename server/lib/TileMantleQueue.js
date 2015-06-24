@@ -74,4 +74,24 @@ TileMantleQueue.prototype.select = function(z, xrange, yrange, opts, callback) {
 	});
 };
 
+/**
+ * Returns the number of items in the queue.
+ *
+ * @param {function} callback
+ * @return {void}
+ */
+TileMantleQueue.prototype.length = function(callback) {
+	this.store.length(callback);
+};
+
+/**
+ * Empties out the queue.
+ *
+ * @param {function} callback
+ * @return {void}
+ */
+TileMantleQueue.prototype.reset = function(callback) {
+	this.store.reset(callback);
+};
+
 module.exports = TileMantleQueue;

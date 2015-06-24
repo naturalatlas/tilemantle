@@ -8,6 +8,13 @@ var TileMantleWorker = require('./TileMantleWorker.js');
 function TileMantle(config) {
 	this.config = config;
 	this._presets = {};
+
+	// throttle "queue_length" notices, while making sure the last event
+	// is not missed (important when the queue goes to zero)
+	var _emitCount = this.emitCount.bind(this);
+	var _a = _.throttle(_emitCount, 750);
+	var _b = _.debounce(_emitCount, 1000);
+	this.emitCount = function() { _a(); _b(); };
 }
 
 /**
@@ -147,7 +154,21 @@ TileMantle.prototype.execute = function(payload, callback) {
 		}, callback);
 	}, function(err) {
 		self.emit('tile_end', payload);
+		self.emitCount();
 		callback(err);
+	});
+};
+
+/**
+ * Emits the current length of the queue.
+ *
+ * @return {void}
+ */
+TileMantle.prototype.emitCount = function() {
+	var self = this;
+	this.queue().length(function(err, count) {
+		if (err) console.error(err);
+		else self.emit('queue_length', count);
 	});
 };
 

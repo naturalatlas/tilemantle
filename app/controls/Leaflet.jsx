@@ -2,6 +2,7 @@ var _ = require('lodash');
 var React = require('react');
 var tilebelt = require('tilebelt');
 var request = require('superagent');
+var socket = require('../utils/socket.js');
 var colors = {
 	grid: '#969b92',
 	user: '#e3762d',
@@ -20,8 +21,9 @@ module.exports = React.createClass({
 	},
 	getTileStyle(feature) {
 		if (feature.properties.complete) {
-			var opacity = 0.5 * feature.properties.i / this._completeTiles.length;
-			return {fillColor: colors.success, fillOpacity: opacity, color: '#50be00', weight: 1, opacity: 1};
+			var falloff = feature.properties.i / this._completeTiles.length;
+			var opacity = 0.5 * falloff;
+			return {fillColor: colors.success, fillOpacity: opacity, color: '#50be00', weight: 1*falloff, opacity: falloff};
 		} else {
 			return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.4};
 		}
@@ -77,9 +79,7 @@ module.exports = React.createClass({
 	},
 	initSocket() {
 		var self = this;
-		if (!window.io) return console.warn('Socket.io not found');
-		var socket = io(window.location.host);
-		socket.on('tile_end', function(payload) {
+		socket().on('tile_end', function(payload) {
 			self.handleTileComplete(payload);
 		});
 	},
