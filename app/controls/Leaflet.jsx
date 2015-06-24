@@ -3,7 +3,7 @@ var React = require('react');
 var tilebelt = require('tilebelt');
 var request = require('superagent');
 var colors = {
-	grid: '#e3762d',
+	grid: '#969b92',
 	user: '#e3762d',
 	queue: '#f7a944',
 	success: '#aee64e'
@@ -20,10 +20,10 @@ module.exports = React.createClass({
 	},
 	getTileStyle(feature) {
 		if (feature.properties.complete) {
-			var opacity = feature.properties.i / this._completeTiles.length;
+			var opacity = 0.5 * feature.properties.i / this._completeTiles.length;
 			return {fillColor: colors.success, fillOpacity: opacity, color: '#50be00', weight: 1, opacity: 1};
 		} else {
-			return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.3};
+			return {stroke: false, fillPattern: this.queueStripes, fillOpacity: 0.4};
 		}
 	},
 	componentDidMount() {
