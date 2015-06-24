@@ -1,6 +1,7 @@
 var fs = require('fs');
 var async = require('async');
 var sqlite3 = require('sqlite3');
+var TransactionDatabase = require("sqlite3-transactions").TransactionDatabase;
 
 function SQLite(opts) {
 	this.options = opts;
@@ -21,7 +22,7 @@ SQLite.prototype.init = function(callback) {
 			});
 		},
 		function createTables(callback) {
-			self.db = new sqlite3.Database(file, function(err) {
+			self.db = new TransactionDatabase(new sqlite3.Database(file, function(err) {
 				if (err) return callback(err);
 				if (exists) return callback();
 				var queries = [
@@ -31,7 +32,7 @@ SQLite.prototype.init = function(callback) {
 				async.eachSeries(queries, function(query, callback) {
 					self.db.run(query, callback);
 				}, callback);
-			});
+			}));
 		}
 	], callback);
 };
@@ -50,21 +51,24 @@ SQLite.prototype.take = function(callback) {
 	var self = this;
 	var item;
 
-	this.db.serialize(function() {
+	this.db.beginTransaction(function(err, transaction) {
+		if (err) return callback(err);
 		async.series([
-			function getRow(callback) {
-				self.db.get('SELECT rowid AS id, x, y, z, preset, ts FROM queue', function(err, row) {
+			function getItem(callback) {
+				transaction.get('SELECT rowid AS id, x, y, z, preset, ts FROM queue', function(err, row) {
 					item = row;
 					callback(err);
 				});
 			},
-			function deleteRow(callback) {
+			function deleteItem(callback) {
 				if (!item) return callback();
-				self.db.run('DELETE FROM queue WHERE rowid = ?', [item.id], callback);
+				transaction.run('DELETE FROM queue WHERE rowid = ?', [item.id], callback);
 			}
 		], function(err) {
-			callback(err, item);
-		});
+			transaction.commit(function(_err) {
+				callback(err||_err, item);
+			});
+		})
 	});
 };
 
