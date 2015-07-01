@@ -51,6 +51,11 @@ var performbuffer = function(geom, amt, callback) {
 function TileMantlePreset(name, opts) {
 	this.name = name;
 	this.options = opts;
+	this.metatile = opts.metatile || 1;
+
+	if ([1,2,4,8].indexOf(this.metatile) === -1) {
+		throw new Error("Metatile option must be 1, 2, 4, or 8");
+	}
 }
 
 /**
@@ -79,6 +84,7 @@ TileMantlePreset.prototype.queue = function(geom, queue, callback) {
 	var self = this;
 	var minZoom = this.options.minZoom || 0;
 	var maxZoom = this.options.maxZoom || 22;
+	var metatile = this.metatile;
 	var zooms = _.range(minZoom, maxZoom+1);
 
 	async.eachSeries(zooms, function(z, callback) {
@@ -99,7 +105,27 @@ TileMantlePreset.prototype.queue = function(geom, queue, callback) {
 				finalgeom = finalgeom.geometry;
 			}
 
-			var tiles = tilecover.tiles(finalgeom, {min_zoom: z, max_zoom: z});
+			var tiles = []; 
+
+			if (metatile === 1) {
+				tiles = tilecover.tiles(finalgeom, {min_zoom: z, max_zoom: z});
+			} else {
+				var dz = {"2":-1, "4":-2, "8":-3}[metatile];
+				var metatiles = tilecover.tiles(finalgeom, {min_zoom: z - dz, max_zoom: z - dz});
+				metatiles.forEach(function(xyz){
+					var z = xyz[2] + dz;
+					var x0 = xyz[0] * metatile;
+					var y0 = xyz[1] * metatile;
+					for(var dy = 0; dy < metatile; dy++){
+						for(var dx = 0; dx < metatile; dx++){
+							var x = x0 + dx;
+							var y = y0 + dy;
+							tiles.push([x, y, z]);
+						}
+					}
+				});
+			}
+
 			async.eachSeries(tiles, function(xyz, callback) {
 				queue.insert(self, xyz[0], xyz[1], xyz[2], callback);
 			}, callback);
