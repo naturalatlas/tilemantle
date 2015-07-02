@@ -121,7 +121,7 @@ TileMantle.prototype.execute = function(payload, callback) {
 	var retry_delay = preset.options.retry_delay || 1000;
 
 	// emit event
-	this.emit('tile_start', {payload: payload});
+	// this.emit('tile_start', {payload: payload});
 
 	// execute each url in preset in order
 	async.eachSeries(preset.options.requests, function(req, callback) {
