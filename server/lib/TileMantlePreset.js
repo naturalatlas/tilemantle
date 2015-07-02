@@ -110,7 +110,7 @@ TileMantlePreset.prototype.queue = function(geom, queue, callback) {
 			if (metatile === 1) {
 				tiles = tilecover.tiles(finalgeom, {min_zoom: z, max_zoom: z});
 			} else {
-				var dz = {"2":-1, "4":-2, "8":-3}[metatile];
+				var dz = {"2":1, "4":2, "8":3}[metatile];
 				var metatiles = tilecover.tiles(finalgeom, {min_zoom: z - dz, max_zoom: z - dz});
 				metatiles.forEach(function(xyz){
 					var z = xyz[2] + dz;
