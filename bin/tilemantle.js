@@ -106,12 +106,12 @@ async.series([
 			var coords = String(argv.point).split(',').map(parseFloat);
 			geojson = turf.point([coords[1], coords[0]]);
 		} else if (argv.e) {
-            var coords = String(argv.extent).split(',').map(parseFloat);
+			var coords = String(argv.extent).split(',').map(parseFloat);
 			var input = turf.featurecollection([
 				turf.point([coords[1], coords[0]]),
 				turf.point([coords[3], coords[2]])
 			]);
-            geojson = turf.bboxPolygon(turf.extent(input));
+			geojson = turf.bboxPolygon(turf.extent(input));
 		} else {
 			displayHelp();
 			console.error('No geometry provided. Pipe geojson, or use --point or --extent');
@@ -123,11 +123,11 @@ async.series([
 			var units = /mi$/.test(argv.buffer) ? 'miles' : 'kilometers';
 			geojson = turf.buffer(geojson, radius, units);
 		}
-        
+		
 		// tilecover doesn't like features
-        if(geojson.tupe === "FeatureCollection") {       
-		    geojson = turf.merge(geojson);
-        }
+		if(geojson.tupe === "FeatureCollection") {       
+			geojson = turf.merge(geojson);
+		}
 		if (geojson.type === 'Feature') {
 			geojson = geojson.geometry;
 		}
@@ -151,7 +151,7 @@ async.series([
 		function buildTileList(geojson, zooms) {
 			var groups = [];
 			zooms.forEach(function(z) {
-                groups.push(tilecover.tiles(geojson, {min_zoom: z, max_zoom: z}));
+				groups.push(tilecover.tiles(geojson, {min_zoom: z, max_zoom: z}));
 			});
 			var result = [];
 			return result.concat.apply(result, groups);
