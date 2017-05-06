@@ -1,6 +1,6 @@
 {
   "name": "tilemantle",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Utility to warm up your tile server's cache",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,8 @@
     "progress": "1.1.8",
     "request": "2.51.0",
     "tile-cover": "2.4.0",
-    "turf": "2.0.2",
+    "turf": "3.0.14",
+    "turf-featurecollection": "1.0.1",
     "yargs": "1.3.3"
   },
   "devDependencies": {

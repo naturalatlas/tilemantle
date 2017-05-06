@@ -5,6 +5,7 @@ var async = require('async');
 var chalk = require('chalk');
 var path = require('path');
 var turf = require('turf');
+var featurecollection = require('turf-featurecollection');
 var numeral = require('numeral');
 var request = require('request');
 var tilecover = require('tile-cover');
@@ -49,6 +50,23 @@ function displayHelp() {
 	console.log('  $ cat region.geojson | tilemantle http://myhost.com/{z}/{x}/{y}.png --zoom=10-14');
 	console.log('  $ cat region.geojson | tilemantle http://myhost.com/{z}/{x}/{y}.png --buffer=20mi --zoom=10-14');
 	console.log('');
+}
+
+function mergeBin(polygons) {
+  var features = polygons.features;
+
+  do {
+    var merged = [], len = features.length;
+    for (var i = 0; i < len-1; i += 2) {
+      merged.push(turf.union(features[i], features[i+1]));
+    }
+    if (len % 2 !== 0) {
+      merged.push(features[len-1]);
+    }
+    features = merged;
+  } while(features.length > 1);
+
+  return features[0];
 }
 
 if (argv.help) {
@@ -107,11 +125,10 @@ async.series([
 			geojson = turf.point([coords[1], coords[0]]);
 		} else if (argv.extent) {
 			var coords = String(argv.extent).split(',').map(parseFloat);
-			var input = turf.featurecollection([
+			geojson = featurecollection([
 				turf.point([coords[1], coords[0]]),
 				turf.point([coords[3], coords[2]])
 			]);
-			geojson = turf.extent(input);
 		} else {
 			displayHelp();
 			console.error('No geometry provided. Pipe geojson, or use --point or --extent');
@@ -121,11 +138,11 @@ async.series([
 		if (argv.buffer) {
 			var radius = parseFloat(argv.buffer);
 			var units = /mi$/.test(argv.buffer) ? 'miles' : 'kilometers';
-			geojson = turf.buffer(geojson, radius, units);
+			geojson = featurecollection([turf.buffer(geojson, radius, units)]);
 		}
 
 		// tilecover doesn't like features
-		geojson = turf.merge(geojson);
+		geojson = mergeBin(geojson);
 		if (geojson.type === 'Feature') {
 			geojson = geojson.geometry;
 		}
