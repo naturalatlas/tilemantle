@@ -4,10 +4,10 @@ var yargs = require('yargs');
 var async = require('async');
 var chalk = require('chalk');
 var path = require('path');
-var turf = require('turf');
+var turf = require('@turf/turf');
 var numeral = require('numeral');
 var request = require('request');
-var tilecover = require('tile-cover');
+var tilecover = require('@mapbox/tile-cover');
 var humanizeDuration = require('humanize-duration');
 var pkg = require('../package.json');
 var ProgressBar = require('progress');
@@ -107,11 +107,11 @@ async.series([
 			geojson = turf.point([coords[1], coords[0]]);
 		} else if (argv.extent) {
 			var coords = String(argv.extent).split(',').map(parseFloat);
-			var input = turf.featurecollection([
+			var geojson = turf.featureCollection([
 				turf.point([coords[1], coords[0]]),
 				turf.point([coords[3], coords[2]])
 			]);
-			geojson = turf.extent(input);
+			//geojson = turf.extent(input);
 		} else {
 			displayHelp();
 			console.error('No geometry provided. Pipe geojson, or use --point or --extent');
@@ -125,7 +125,7 @@ async.series([
 		}
 
 		// tilecover doesn't like features
-		geojson = turf.merge(geojson);
+		geojson = turf.union(geojson.features);
 		if (geojson.type === 'Feature') {
 			geojson = geojson.geometry;
 		}
