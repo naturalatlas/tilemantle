@@ -51,7 +51,7 @@ function displayHelp() {
 	console.log('');
 }
 
-if (argv.help) {
+if (argv.h) {
 	displayHelp();
 	process.exit(0);
 }
@@ -99,37 +99,43 @@ async.series([
 	},
 	function determineGeometry(callback) {
 		if (rawgeojson) {
-			geojson = JSON.parse(rawgeojson);
-		} else if (argv.file) {
+            geojson = JSON.parse(rawgeojson);
+		} else if (argv.f) {
 			geojson = JSON.parse(fs.readFileSync(argv.file, 'utf8'));
-		} else if (argv.point) {
+		} else if (argv.p) {
 			var coords = String(argv.point).split(',').map(parseFloat);
 			geojson = turf.point([coords[1], coords[0]]);
-		} else if (argv.extent) {
+		} else if (argv.e) {
 			var coords = String(argv.extent).split(',').map(parseFloat);
-			var geojson = turf.featureCollection([
+			geojson = turf.featureCollection([
 				turf.point([coords[1], coords[0]]),
 				turf.point([coords[3], coords[2]])
 			]);
-			//geojson = turf.extent(input);
+            geojson = turf.bboxPolygon(turf.bbox(geojson));
 		} else {
 			displayHelp();
 			console.error('No geometry provided. Pipe geojson, or use --point or --extent');
 			return process.exit(1);
 		}
 
-		if (argv.buffer) {
+		if (argv.b) {
 			var radius = parseFloat(argv.buffer);
 			var units = /mi$/.test(argv.buffer) ? 'miles' : 'kilometers';
 			geojson = turf.buffer(geojson, radius, units);
 		}
 
-		// tilecover doesn't like features
-		geojson = turf.union(geojson.features);
+        // tilecover doesn't like features
+		if(geojson.type === 'FeatureCollection'){
+			var merged = turf.clone(geojson.features[0]),features = geojson.features;
+			for(var i = 0; i < features.length; i++){
+				var poly = features[i];
+                if (poly.geometry) merged = turf.union(merged, poly);
+			}
+            geojson = merged;
+		}
 		if (geojson.type === 'Feature') {
 			geojson = geojson.geometry;
 		}
-
 		callback();
 	},
 	function performAction(callback) {
