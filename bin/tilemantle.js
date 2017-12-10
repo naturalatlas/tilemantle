@@ -192,7 +192,7 @@ async.series([
 			}
 
 			bar = new ProgressBar(chalk.gray('[:bar] :percent (:current/:total) eta: :etas'), {total: urls.length, width: 20});
-			async.eachLimit(urls, argv.concurrency, function(url, callback) {
+			async.eachOfLimit(urls, argv.concurrency, function(url,key, callback) {
 				async.retry(argv.retries, function(callback) {
 					var start = (new Date()).getTime();
 					request({
@@ -201,23 +201,30 @@ async.series([
 						headers: headers
 					}, function(err, res, body) {
 						if (err) return callback(err);
-
 						var time = (new Date()).getTime() - start;
 						var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
 						var size_data = filesize(res.body.length);
 						var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
-
 						process.stdout.cursorTo(0);
-						console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
-						bar.tick();
-
+                        console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
 						if (res.statusCode !== 200) {
-							count_failed++;
-							callback('Request failed (non-200 status)');
+							// tip for http request error
+							var errMsg = 'Request failed (non -200 status)';
+                            bar.interrupt(errMsg+'\ncurrent progress is '+ bar.curr+'/'+bar.total);
+                            // if in retry,count_failed do not change
+                            if(typeof prevKey === "undefined")  prevKey = "undefined";
+							if(prevKey !== key){
+                                count_failed++;
+                                prevKey = key;
+							}
+							callback(errMsg);
 						} else {
+                            bar.tick();
 							count_succeeded++;
 							callback();
 						}
+
+
 					});
 				}, function(err) {
 					if (err && argv.allowfailures) err = null;
