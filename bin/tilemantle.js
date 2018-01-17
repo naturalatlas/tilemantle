@@ -40,6 +40,8 @@ var argv = require('yargs')
 	})
 	.parse(process.argv);
 
+
+
 function displayHelp() {
 	yargs.showHelp();
 	console.log('Examples:');
