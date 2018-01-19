@@ -40,8 +40,6 @@ var argv = require('yargs')
 	})
 	.parse(process.argv);
 
-
-
 function displayHelp() {
 	yargs.showHelp();
 	console.log('Examples:');
@@ -92,10 +90,12 @@ async.series([
 			if (chunk === null) {
 				callback();
 			} else {
+
 				rawgeojson += chunk;
 			}
 		});
 		process.stdin.on('end', function() {
+            console.log(1)
 			callback();
 		});
 	},
@@ -194,40 +194,50 @@ async.series([
 			}
 
 			bar = new ProgressBar(chalk.gray('[:bar] :percent (:current/:total) eta: :etas'), {total: urls.length, width: 20});
+            function sleep(sleepTime) {
+                for(var start = +new Date; +new Date - start < sleepTime;){}
+            }
 			async.eachOfLimit(urls, argv.concurrency, function(url,key, callback) {
 				async.retry(argv.retries, function(callback) {
 					var start = (new Date()).getTime();
-					request({
-						method: argv.method,
-						url: url,
-						headers: headers
-					}, function(err, res, body) {
-						if (err) return callback(err);
-						var time = (new Date()).getTime() - start;
-						var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
-						var size_data = filesize(res.body.length);
-						var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
-						process.stdout.cursorTo(0);
-                        console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
-						if (res.statusCode !== 200) {
-							// tip for http request error
-							var errMsg = 'Request failed (non -200 status)';
-                            bar.interrupt(errMsg+'\ncurrent progress is '+ bar.curr+'/'+bar.total);
-                            // if in retry,count_failed do not change
-                            if(typeof prevKey === "undefined")  prevKey = "undefined";
-							if(prevKey !== key){
-                                count_failed++;
-                                prevKey = key;
+                    requestProcess.call(null)
+					function requestProcess(){
+                        request({
+                            method: argv.method,
+                            url: url,
+                            headers: headers
+                        }, function(err, res, body) {
+                            if (err) {
+                            	sleep(5000)
+								console.log(chalk.red("\n连接已经断开，5秒后重连！！"))
+								requestProcess.call(null)
+								return
 							}
-							callback(errMsg);
-						} else {
-                            bar.tick();
-							count_succeeded++;
-							callback();
-						}
+                            var time = (new Date()).getTime() - start;
+                            var statuscolor = res.statusCode !== 200 ? 'red' : 'green';
+                            var size_data = filesize(res.body.length);
+                            var size_length = res.headers['content-length'] ? filesize(Number(res.headers['content-length'])) : '(no content-length)';
+                            process.stdout.cursorTo(0);
+                            console.log(chalk.gray('[') + chalk[statuscolor](res.statusCode) + chalk.grey(']') + ' ' + url + ' ' + chalk.blue(time + 'ms') + ' ' + chalk.grey(size_data + ', ' + size_length));
+                            if (res.statusCode !== 200) {
+                                // tip for http request error
+                                var errMsg = 'Request failed (non -200 status)';
+                                bar.interrupt(errMsg+'\ncurrent progress is '+ bar.curr+'/'+bar.total);
+                                // if in retry,count_failed do not change
+                                if(typeof prevKey === "undefined")  prevKey = "undefined";
+                                if(prevKey !== key){
+                                    count_failed++;
+                                    prevKey = key;
+                                }
+                                callback(errMsg);
+                            } else {
+                                bar.tick();
+                                count_succeeded++;
+                                callback();
+                            }
+                        });
+					}
 
-
-					});
 				}, function(err) {
 					if (err && argv.allowfailures) err = null;
 					callback(err);
