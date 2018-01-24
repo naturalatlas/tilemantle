@@ -33,7 +33,7 @@ var argv = require('yargs')
 	.alias('m', 'method').describe('m', 'HTTP method to use to fetch tiles').string('m')
 	.alias('H', 'header').describe('H', 'Add a request header').string('H')
 	.alias('c', 'concurrency').describe('c', 'Number of tiles to request simultaneously')
-	.default({delay: '100ms', concurrency: 1, allowfailures: true, retries: 5, method: 'HEAD'})
+	.default({delay: '100ms', concurrency: 1, allowfailures: true, retries: 10, method: 'HEAD'})
 	.check(function(argv) {
 		if (!/^\d+(\.\d+)?(ms|s)$/.test(argv.delay)) throw new Error('Invalid "delay" argument');
 		if (!/^((\d+\-\d+)|(\d+(,\d+)*))$/.test(argv.zoom)) throw new Error('Invalid "zoom" argument');
@@ -246,15 +246,23 @@ async.series([
 		}
 	}
 ], function(err) {
+    var log;
+    var duration = humanizeDuration((new Date()).getTime() - t_start);
+    var command = process.argv.join(" ");
+    var date = (new Date()).getTime()
+    var logFileName = "log-"+date+".log"
 	if (count_succeeded || count_failed) {
-		var duration = (new Date()).getTime() - t_start;
-		console.log('');
-		console.log(chalk.grey(numeral(count_succeeded).format('0,0') + ' succeeded, ' + numeral(count_failed).format('0,0') + ' failed after ' + humanizeDuration(duration)));
+        console.log('');
+        console.log(chalk.grey(numeral(count_succeeded).format('0,0') + ' succeeded, ' + numeral(count_failed).format('0,0') + ' failed after ' + duration));
+        log = "执行的命令："+command+"\n耗时:"+duration+"\n成功缓存："+numeral(count_succeeded).format('0,0')+"个，失败"+numeral(count_failed).format('0,0')+"个\n";
 	}
-	if (err) {
-		console.error(chalk.red('Error: ' + (err.message || err)));
-		process.exit(1);
-	} else {
-		process.exit(0);
-	}
+	if(!fs.existsSync("log")) fs.mkdir("log")
+    fs.writeFileSync("log/"+logFileName,log);
+    if (err) {
+        console.error(chalk.red('Error: ' + (err.message || err)));
+        log = err.message || err
+        process.exit(1);
+    }else{
+        process.exit(0);
+    }
 });
