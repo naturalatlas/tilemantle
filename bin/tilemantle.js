@@ -162,14 +162,13 @@ async.series([
 			var result = [];
 			return result.concat.apply(result, groups);
 		}
-		function buildURLs(xyz) {
-			urltemplates.forEach(function(template) {
-				urls.push(template.replace(/\{x\}/g, xyz[0]).replace(/\{y\}/g, xyz[1]).replace(/\{z\}/g, xyz[2]));
-			});
-		}
+		// function buildURLs(xyz) {
+		// 	urltemplates.forEach(function(template) {
+		// 		urls.push(template.replace(/\{x\}/g, xyz[0]).replace(/\{y\}/g, xyz[1]).replace(/\{z\}/g, xyz[2]));
+		// 	});
+		// }
 
-		var urls = [];
-		buildTileList(geojson, zooms).forEach(buildURLs);
+		var xyzList = buildTileList(geojson, zooms);
 
 		if (argv.list) {
 			for (var i = 0, n = urls.length; i < n; i++) {
@@ -193,11 +192,12 @@ async.series([
 				headers['User-Agent'] = 'TileMantle/' + pkg.version;
 			}
 
-			bar = new ProgressBar(chalk.gray('[:bar] :percent (:current/:total) eta: :etas'), {total: urls.length, width: 20});
+			bar = new ProgressBar(chalk.gray('[:bar] :percent (:current/:total) eta: :etas'), {total: xyzList.length, width: 20});
             function sleep(sleepTime) {
                 for(var start = +new Date; +new Date - start < sleepTime;){}
             }
-			async.eachOfLimit(urls, argv.concurrency, function(url,key, callback) {
+			async.eachOfLimit(xyzList, argv.concurrency, function(xyz,key, callback) {
+                var url = urltemplates[0].replace(/\{x\}/g, xyz[0]).replace(/\{y\}/g, xyz[1]).replace(/\{z\}/g, xyz[2]);
 				async.retry(argv.retries, function(callback) {
 					var start = (new Date()).getTime();
                     requestProcess.call(null)
