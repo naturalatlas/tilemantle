@@ -12,6 +12,7 @@ var humanizeDuration = require('humanize-duration');
 var pkg = require('../package.json');
 var ProgressBar = require('progress');
 var bar;
+var dateFormat = require('dateformat');
 
 var filesize = function(bytes) {
 	return Number((bytes / 1024).toFixed(2)) + 'kB';
@@ -249,14 +250,14 @@ async.series([
     var log;
     var duration = humanizeDuration((new Date()).getTime() - t_start);
     var command = process.argv.join(" ");
-    var date = (new Date()).getTime()
-    var logFileName = "log-"+date+".log"
+    var date = new Date();
+    var logFileName = "log-"+dateFormat(date,'yyyy-mm-dd-hh-MM-ss')+".log"
 	if (count_succeeded || count_failed) {
         console.log('');
         console.log(chalk.grey(numeral(count_succeeded).format('0,0') + ' succeeded, ' + numeral(count_failed).format('0,0') + ' failed after ' + duration));
         log = "执行的命令："+command+"\n耗时:"+duration+"\n成功缓存："+numeral(count_succeeded).format('0,0')+"个，失败"+numeral(count_failed).format('0,0')+"个\n";
 	}
-	if(!fs.existsSync("log")) fs.mkdir("log")
+	if(!fs.existsSync("log")) fs.mkdirSync("log")
     fs.writeFileSync("log/"+logFileName,log);
     if (err) {
         console.error(chalk.red('Error: ' + (err.message || err)));
